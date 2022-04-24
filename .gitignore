@@ -33,7 +33,7 @@
 
 
 #folders
-bazel-bin
-bazel-out
-bazel-pendulum_example
-bazel-testlogs
+bazel-bin/
+bazel-out/
+bazel-pendulum_example/
+bazel-testlogs/
