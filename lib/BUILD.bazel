@@ -1,0 +1,5 @@
+cc_library(
+    name = "acados_lib",
+    srcs = glob(["*.so"]),
+    visibility = ["//visibility:public"],
+)

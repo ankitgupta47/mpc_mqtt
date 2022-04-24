@@ -1,0 +1,6 @@
+cc_library(
+    name = "hpipm",
+    hdrs = glob(["*.h"]),
+    deps = [ "//blasfeo/include:blasfeo"],
+    visibility = ["//visibility:public"],
+)

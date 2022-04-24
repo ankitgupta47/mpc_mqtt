@@ -1,0 +1,5 @@
+cc_library(
+    name = "qdldl",
+    srcs = glob(["*.h"]),
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,81 @@
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
+
+cc_library(
+    name = "pedulum_includes",
+    srcs = ["acados_solver_pendulum_ode.c"],
+    hdrs = ["acados_solver_pendulum_ode.h"],
+    deps = ["//acados:acados",
+            "//acados_c:acados_c",
+            "//hpipm/include:hpipm",
+            "//blasfeo/include:blasfeo",
+            "//pendulum_ode_model:pendulum_model",
+            "//lib:acados_lib"],
+)
+
+# cmake(
+#     name = "paho_mqtt-c",
+#     cache_entries = {
+#         "CMAKE_C_COMPILER":"/usr/bin/clang",
+#         "CMAKE_C_COMPILER_FORCED":"TRUE",
+#         "OPENSSL_ROOT_DIR":"/usr/include",
+#         "OPENSSL_LIB_SEARCH_PATH":"/usr/bin",
+#         "OPENSSL_INC_SEARCH_PATH":"/usr/lib/x86_64-linux-gnu/openssl",
+#         "OPENSSL_CRYPTO_LIBRARY":"/usr/lib/x86_64-linux-gnu/libcrypto.a",
+#         "PAHO_WITH_SSL":"ON",
+#     },
+#     includes = ["/usr/include"],
+#     lib_source ="@paho_mqtt_c//:mqtt_c",
+# #    working_directory = "paho_mqtt_c",
+#     #out_shared_libs = ["libpaho_mqtt_c.so"],
+# )
+
+# cmake(
+#     name = "paho_mqttcpp",
+#     cache_entries = {
+#         "CMAKE_CXX_COMPILER": "/usr/bin/x86_64-linux-gnu-gcc",
+#         "CMAKE_CXX_COMPILER_FORCED":"TRUE",
+#         "PAHO_WITH_SSL":"FALSE",
+#         "PAHO_BUILD_SHARED":"TRUE",
+#         "PahoMqttC_DIR":"/usr/local/lib/cmake/eclipse-paho-mqtt-c",
+#         "PAHO_MQTT_C_INCLUDE_DIRS":"/usr/local/include",
+#         "PAHO_MQTT_C_LIBRARIES":"/usr/local/lib",
+#         "CMAKE_INSTALL_PREFIX":"/usr/local/mqttcpp"
+#     },
+#     lib_source = "@paho_mqtt_cpp//:mqtt_cpp",
+#     #copts = ["-Iusr/local"]
+#     #out_static_libs = ["libpaho_mqtt_cpp.a"],
+#     #deps  = ["//:paho_mqtt-c"]
+#     #deps = ["usr/local/lib",
+#     #        "usr/local/include"]
+# )
+cc_library(
+    name = "pendulum_mpc",
+    srcs = ["ocp.cpp"],
+    hdrs = ["include/ocp.h"],
+    copts = ["-Wno-unused-parameter","-Wno-unused-variable","-Wno-unused-but-set-variable"],
+    deps = ["//:pedulum_includes"],
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "pendulum_example",
+    srcs = ["main_pendulum_ode.c"],
+    copts = ["-Wno-unused-parameter","-Wunused-variable"],
+    deps = ["//:pedulum_includes"],
+)
+
+cc_test(
+  name = "mpc_test",
+  srcs = ["pendulum_mpc_test.cpp",
+          "include/pendulum_mpc_test.hpp"],
+  deps = ["@com_google_googletest//:gtest_main",
+          "//:pendulum_mpc"],
+)
+
+cc_binary(
+    name = "establish_communication",
+    srcs = ["main_communicate.cpp"],
+    copts = ["-Wno-unused-parameter","-Wunused-variable"],
+    deps = ["//:pendulum_mpc"], 
+    linkopts = ["-L/usr/local/lib","-lpaho-mqttpp3","-lpaho-mqtt3a"]
+)

@@ -1,0 +1,7 @@
+cc_test(
+  name = "mpc_test",
+  srcs = ["pendulum_mpc_test.c",
+          "include/pendulum_mpc_test.h"],
+  deps = ["//:pedulum_mpc",
+          "@com_google_googletest//:gtest_main"],
+)
