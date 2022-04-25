@@ -62,6 +62,7 @@ namespace ocp
     OCP::~OCP()
     {
         // free solver
+        printf("Solver destructed\n");
         int status = pendulum_ode_acados_free(acados_ocp_capsule);
         if (status)
         {
@@ -85,12 +86,11 @@ namespace ocp
         return u_out;
     }
 
-    void OCP::set_initial_state( std::array<double,PENDULUM_ODE_NX>& x_state)
+    void OCP::set_initial_state(std::array<double, PENDULUM_ODE_NX> &x_state)
     {
         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", &*x_state.begin());
         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "ubx", &*x_state.begin());
     }
-
 
     void OCP::set_ith_stage_state(int i, std::array<double, PENDULUM_ODE_NX> &x_state)
     {
@@ -136,7 +136,7 @@ namespace ocp
 
     void OCP::ocp_warm_start()
     {
-        for (int i = 0; i < PENDULUM_ODE_N; i++)
+        for (int i = 1; i < PENDULUM_ODE_N; i++)
         {
             auto state_ith_iterator = std::next(std::begin(xtraj), PENDULUM_ODE_NX * i);
             auto input_ith_iterator = std::next(std::begin(xtraj), PENDULUM_ODE_NU * i);
