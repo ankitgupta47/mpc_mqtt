@@ -9,7 +9,9 @@
 
 const std::string SERVER_ADDRESS{"tcp://broker.hivemq.com:1883"};
 const std::string CLIENT_ID{"mpcController"}; // not mandatory, can be empty
-const std::string TOPIC{"CONTROL/FORCE"};
+const std::string PUBLISH_TOPIC{"CONTROL/FORCE"};
+const std::string SUBSCRIBE_TOPIC{"PENDULUM/STATES"};
+
 
 // How many to buffer while off-line
 const int MAX_BUFFERED_MESSAGES = 1200;
@@ -40,8 +42,13 @@ void signalHandler(int signum)
 	exit(signum);
 }
 
-std::array<double, 4U> get_state_measurement()
+std::array<double, 4U> get_state_measurement(mqtt::async_client& client, mqtt::string topic, int qos)
 {
+	client.subscribe(topic, qos);
+	auto msg = client.consume_message();
+	auto msg_topic = msg->get_topic();
+	auto msg_payload = msg->to_string();
+	std::cout << "message=" << msg_payload;
 	return {0, 0.1, 0, 0};
 }
 
@@ -60,6 +67,7 @@ int main(int argc, char *argv[])
 						  .finalize();
 
 	mqtt::async_client client(SERVER_ADDRESS, CLIENT_ID, createOpts);
+	mqtt::async_client client2(SERVER_ADDRESS, "");
 
 	// Set callbacks for when connected and connection lost.
 
@@ -71,7 +79,7 @@ int main(int argc, char *argv[])
 									   { std::cout << "*** Connection Lost ("
 												   << timestamp() << ") ***" << std::endl; });
 
-	auto willMsg = mqtt::message(TOPIC, "Controller offline", QOS);
+	auto willMsg = mqtt::message(PUBLISH_TOPIC, "Controller offline", QOS);
 
 	auto connOpts = mqtt::connect_options_builder()
 						.clean_session(true)
@@ -88,6 +96,8 @@ int main(int argc, char *argv[])
 		std::cout << "Waiting for the connection..." << std::endl;
 		conntok->wait();
 
+		client2.connect(connOpts);
+
 		// register signal SIGINT and signal handler
 		signal(SIGINT, signalHandler);
 
@@ -97,7 +107,9 @@ int main(int argc, char *argv[])
 		while (true)
 		{
 			auto start = std::chrono::high_resolution_clock::now();
-			std::array<double, 4U> new_measurement{get_state_measurement()};
+					std::cout << "HELLO connection..." ;
+
+			std::array<double, 4U> new_measurement{get_state_measurement(client2,SUBSCRIBE_TOPIC,QOS)};
 			double control_input = mpcController->step_ocp(new_measurement);
 			auto stop = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
@@ -107,7 +119,7 @@ int main(int argc, char *argv[])
 			std::cout << "input: " << control_input << ", computation time: " << duration.count() / 1000.0F << " (milliseconds)" << std::endl;
 
 			// Publish the computed control input.
-			auto topic = mqtt::topic(client, TOPIC, QOS);
+			auto topic = mqtt::topic(client, PUBLISH_TOPIC, QOS);
 			std::cout << "Publishing data..." << std::endl;
 			topic.publish(std::to_string(control_input));
 		}
