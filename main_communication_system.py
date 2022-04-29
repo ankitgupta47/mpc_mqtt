@@ -39,8 +39,6 @@ def publish(client,topic,payload):
 #     def on_message(client, userdata, msg):
 #         print(msg)
 #         # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
-
-
 #     client.subscribe(topic)
 #     client.on_message = on_message
 
@@ -48,9 +46,9 @@ def main():
     client = connect_mqtt(BROKER,PORT,CLIENT_ID)
     simTime = 0
     while(simTime<2000):
-        # state  = np.array([0,0.1,0,0])
-        # payload = np.array2string(state)
-        # publish(client,PUB_TOPIC,payload)
+        state  = np.array([0.0001, 0.0020,0.1000,0.0003])
+        payload = np.array2string(state)
+        publish(client,PUB_TOPIC,payload)
         rec_msg = subscribe.simple(topics=SUB_TOPIC,hostname=BROKER,port=PORT,retained=True,qos=QOS)
         print(rec_msg.payload.decode())
         # subscribe(client,SUB_TOPIC)

@@ -55,13 +55,13 @@ std::array<double, 4U> get_state_measurement()
 int main(int argc, char *argv[])
 {
 	std::cout << "Initializing for server '" << SERVER_ADDRESS << "'..." << std::endl;
-	auto createOpts = mqtt::create_options_builder()
-						  .send_while_disconnected(true, true)
-						  .max_buffered_messages(MAX_BUFFERED_MESSAGES)
-						  .delete_oldest_messages()
-						  .finalize();
+	// auto createOpts = mqtt::create_options_builder()
+	// 					  .send_while_disconnected(true, true)
+	// 					  .max_buffered_messages(MAX_BUFFERED_MESSAGES)
+	// 					  .delete_oldest_messages()
+	// 					  .finalize();
 
-	mqtt::async_client client(SERVER_ADDRESS, CLIENT_ID, createOpts);
+	mqtt::async_client client(SERVER_ADDRESS, CLIENT_ID);
 	// mqtt::async_client client2(SERVER_ADDRESS, "");
 
 	// Set callbacks for when connected and connection lost.
@@ -74,16 +74,19 @@ int main(int argc, char *argv[])
 									   { std::cout << "*** Connection Lost ("
 												   << timestamp() << ") ***" << std::endl; });
 
-	auto willMsg = mqtt::message(PUBLISH_TOPIC, "Controller offline", QOS);
+	// auto willMsg = mqtt::message(PUBLISH_TOPIC, "Controller offline", QOS);
 
 	auto connOpts = mqtt::connect_options_builder()
-						.clean_session(true)
-						.will(willMsg)
+						.clean_session(false)
 						.automatic_reconnect(true)
 						.finalize();
 
 	try
 	{
+		// Start consumer before connecting to make sure to not miss messages
+
+		client.start_consuming();
+
 		// Note that we start the connection, but don't wait for completion.
 		// We configured to allow publishing before a successful connection.
 		std::cout << "Initiating connection..." << std::endl;
@@ -91,7 +94,9 @@ int main(int argc, char *argv[])
 		std::cout << "Waiting for the connection..." << std::endl;
 		conntok->wait();
 
-		// client2.connect(connOpts);
+		// we need to subscribe
+		client.subscribe(SUBSCRIBE_TOPIC, QOS)->wait();
+		std::cout << "Waiting for messages on topic: '" << SUBSCRIBE_TOPIC << "'" << std::endl;
 
 		// register signal SIGINT and signal handler
 		signal(SIGINT, signalHandler);
@@ -102,7 +107,12 @@ int main(int argc, char *argv[])
 		while (true)
 		{
 			auto start = std::chrono::high_resolution_clock::now();
-			std::cout << "HELLO connection..." ;
+
+			// Get pedulum states
+			auto msg = client.consume_message();
+			std::string system_state = msg->to_string();
+			std::cout << msg->get_topic() << ": " << system_state << std::endl;
+
 
 			std::array<double, 4U> new_measurement{get_state_measurement()};
 			double control_input = mpcController->step_ocp(new_measurement);
