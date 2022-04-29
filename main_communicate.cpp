@@ -42,13 +42,8 @@ void signalHandler(int signum)
 	exit(signum);
 }
 
-std::array<double, 4U> get_state_measurement(mqtt::async_client& client, mqtt::string topic, int qos)
+std::array<double, 4U> get_state_measurement()
 {
-	client.subscribe(topic, qos);
-	auto msg = client.consume_message();
-	auto msg_topic = msg->get_topic();
-	auto msg_payload = msg->to_string();
-	std::cout << "message=" << msg_payload;
 	return {0, 0.1, 0, 0};
 }
 
@@ -67,7 +62,7 @@ int main(int argc, char *argv[])
 						  .finalize();
 
 	mqtt::async_client client(SERVER_ADDRESS, CLIENT_ID, createOpts);
-	mqtt::async_client client2(SERVER_ADDRESS, "");
+	// mqtt::async_client client2(SERVER_ADDRESS, "");
 
 	// Set callbacks for when connected and connection lost.
 
@@ -96,7 +91,7 @@ int main(int argc, char *argv[])
 		std::cout << "Waiting for the connection..." << std::endl;
 		conntok->wait();
 
-		client2.connect(connOpts);
+		// client2.connect(connOpts);
 
 		// register signal SIGINT and signal handler
 		signal(SIGINT, signalHandler);
@@ -107,9 +102,9 @@ int main(int argc, char *argv[])
 		while (true)
 		{
 			auto start = std::chrono::high_resolution_clock::now();
-					std::cout << "HELLO connection..." ;
+			std::cout << "HELLO connection..." ;
 
-			std::array<double, 4U> new_measurement{get_state_measurement(client2,SUBSCRIBE_TOPIC,QOS)};
+			std::array<double, 4U> new_measurement{get_state_measurement()};
 			double control_input = mpcController->step_ocp(new_measurement);
 			auto stop = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
@@ -123,6 +118,11 @@ int main(int argc, char *argv[])
 			std::cout << "Publishing data..." << std::endl;
 			topic.publish(std::to_string(control_input));
 		}
+
+		// Disconnect
+		std::cout << "\nDisconnecting..." << std::endl;
+		client.disconnect()->wait();
+		std::cout << "  ...OK" << std::endl;
 	}
 	catch (const mqtt::exception &exc)
 	{
