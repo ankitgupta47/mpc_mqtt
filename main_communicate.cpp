@@ -42,6 +42,38 @@ void signalHandler(int signum)
 	exit(signum);
 }
 
+std::array<double,4U> stringToArray(std::string &str_arr){
+    
+     //Test if string begins with [ and ends with ].
+    if (str_arr.front() != '[' || str_arr.back() != ']')
+    {
+        std::cout << "String does not begin with '[' and/or end with ']'\n";
+    }
+    //Replace [] with whitespace.
+    str_arr.front() = str_arr.back() = ' ';
+    
+    //Create stringstream from string.
+    auto my_stream = std::istringstream(str_arr);
+    double n;
+    std::array<double,4U> arr{};
+    int i = 0;
+    while (my_stream) {
+        // Streaming until space is encountered
+        my_stream >> n;
+ 
+        // If my_stream is not empty
+        if (my_stream) {
+           arr.at(i) = n;
+        }
+        i++;
+    }
+	for (auto x:arr){
+		std::cout<<x<<" ";
+	}
+	std::cout<<"\n";
+return arr;
+}
+
 std::array<double, 4U> get_state_measurement()
 {
 	return {0, 0.1, 0, 0};
@@ -114,7 +146,7 @@ int main(int argc, char *argv[])
 			std::cout << msg->get_topic() << ": " << system_state << std::endl;
 
 
-			std::array<double, 4U> new_measurement{get_state_measurement()};
+			std::array<double, 4U> new_measurement{stringToArray(system_state)};
 			double control_input = mpcController->step_ocp(new_measurement);
 			auto stop = std::chrono::high_resolution_clock::now();
 			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);

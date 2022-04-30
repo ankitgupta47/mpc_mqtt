@@ -46,7 +46,7 @@ def main():
     client = connect_mqtt(BROKER,PORT,CLIENT_ID)
     simTime = 0
     while(simTime<2000):
-        state  = np.array([0.0001, 0.0020,0.1000,0.0003])
+        state  = np.array([0.0001, 0.20,0.1000,0.0003])
         payload = np.array2string(state)
         publish(client,PUB_TOPIC,payload)
         rec_msg = subscribe.simple(topics=SUB_TOPIC,hostname=BROKER,port=PORT,retained=True,qos=QOS)
